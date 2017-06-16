@@ -1,3 +1,4 @@
+require 'git'
 namespace :conditional do
   desc "Initializes the conditional deployment functionality"
   task :apply do
