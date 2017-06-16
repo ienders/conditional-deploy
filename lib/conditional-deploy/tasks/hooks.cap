@@ -1,20 +1,2 @@
-namespace :conditional do
-  desc "Initializes the conditional deployment functionality"
-  task :apply do
-    on primary(:app) do
-      currently_deployed_version = capture("cat #{current_path}/REVISION").strip rescue nil
-      git = Git.open('../')
-      current = git.object(currently_deployed_version)
-      deploying = git.object(fetch(:branch))
-      git_difference = git.diff(current, deploying).stats
-      files_changed = git_difference[:files].keys
-      borg_files_changed = files_changed.select{|m| m.include?("#{fetch(:repo_tree)}/")}.count
-      if borg_files_changed == 0
-        abort "Nothing to Update!"
-      end
-    end
-  end
-end
-
 # Ensure deploys apply conditional elements before running the rest of the tasks
 before 'deploy:starting', 'conditional:apply'
