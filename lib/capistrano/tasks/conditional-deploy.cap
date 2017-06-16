@@ -5,7 +5,7 @@ namespace :conditional do
       currently_deployed_version = capture("cat #{current_path}/REVISION").strip rescue nil
       git = Git.open('../')
       current = git.object(currently_deployed_version)
-      deploying = git.object(fetch(:branch))
+      deploying = git.object("origin/#{fetch(:branch)}")
       git_difference = git.diff(current, deploying).stats
       files_changed = git_difference[:files].keys
       borg_files_changed = files_changed.select{|m| m.include?("#{fetch(:repo_tree)}/")}.count
