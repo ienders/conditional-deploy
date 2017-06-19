@@ -7,7 +7,7 @@ ConditionalDeploy - This gem does a conditional deploy, by comparing the current
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'conditional-deploy', git: 'git@github.com:ronakjain90/conditional-deploy.git'
+gem 'conditional-deploy', git: 'git@github.com:weddingwire/conditional-deploy.git'
 ```
 
 And then execute:
