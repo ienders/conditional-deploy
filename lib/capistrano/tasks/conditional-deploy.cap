@@ -8,8 +8,8 @@ namespace :conditional do
       deploying = git.object("origin/#{fetch(:branch)}")
       git_difference = git.diff(current, deploying).stats
       files_changed = git_difference[:files].keys
-      borg_files_changed = files_changed.select{|m| m.include?("#{fetch(:repo_tree)}/")}.count
-      if borg_files_changed == 0
+      app_files_changed = files_changed.select{|m| m.include?("#{fetch(:repo_tree)}/")}.count
+      if app_files_changed == 0
         abort "Nothing to Update!"
       end
     end
