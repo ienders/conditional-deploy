@@ -18,7 +18,7 @@ namespace :conditional do
       conditional_deploy_dependencies << "#{fetch(:repo_tree)}"
 
       relevant_files_changed = 0
-      info "conditional-deploy: Checking files changed..."
+      debug "conditional-deploy: Checking files changed..."
       files_changed.each do |file|
         matched = false
         conditional_deploy_dependencies.each do |dependency|
@@ -27,13 +27,13 @@ namespace :conditional do
             relevant_files_changed += 1
           end
         end
-        info "  #{matched ? '✓' : '✗'} #{file}"
+        debug "  #{matched ? '✓' : '✗'} #{file}"
       end
 
       if relevant_files_changed == 0
         abort "conditional-deploy: Nothing to Update!"
       else
-        info "conditional-deploy: #{relevant_files_changed} files changed. Continuing deploy."
+        debug "conditional-deploy: #{relevant_files_changed} files changed. Continuing deploy."
       end
     end
   end
