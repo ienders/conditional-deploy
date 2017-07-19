@@ -6,35 +6,41 @@ namespace :conditional do
         info "Skipping conditional-deploy checks. Party on!"
         next
       end
+      revision_history = "#{current_path}/REVISION"
 
-      currently_deployed_version = capture("cat #{current_path}/REVISION").strip rescue nil
-      git = Git.open('../')
-      current = git.object(currently_deployed_version)
-      deploying = git.object("origin/#{fetch(:branch)}")
-      git_difference = git.diff(current, deploying).stats
-      files_changed = git_difference[:files].keys
+      if test "[[ -f #{revision_history} ]]"
+        currently_deployed_version = capture("cat #{revision_history}").strip rescue nil
+        git = Git.open('../')
+        current = git.object(currently_deployed_version)
+        deploying = git.object("origin/#{fetch(:branch)}")
+        git_difference = git.diff(current, deploying).stats
+        files_changed = git_difference[:files].keys
 
-      conditional_deploy_dependencies = fetch(:deploy_dependencies, [])
-      conditional_deploy_dependencies << "#{fetch(:repo_tree)}"
+        conditional_deploy_dependencies = fetch(:deploy_dependencies, [])
+        conditional_deploy_dependencies << "#{fetch(:repo_tree)}"
 
-      relevant_files_changed = 0
-      debug "conditional-deploy: Checking files changed..."
-      files_changed.each do |file|
-        matched = false
-        conditional_deploy_dependencies.each do |dependency|
-          if file.include?(dependency)
-            matched = true
-            relevant_files_changed += 1
+        relevant_files_changed = 0
+        debug "conditional-deploy: Checking files changed..."
+        files_changed.each do |file|
+          matched = false
+          conditional_deploy_dependencies.each do |dependency|
+            if file.include?(dependency)
+              matched = true
+              relevant_files_changed += 1
+            end
           end
+          debug "  #{matched ? '✓' : '✗'} #{file}"
         end
-        debug "  #{matched ? '✓' : '✗'} #{file}"
+
+        if relevant_files_changed == 0
+          abort "conditional-deploy: Nothing to Update!"
+        else
+          debug "conditional-deploy: #{relevant_files_changed} files changed. Continuing deploy."
+        end
+      else
+        debug "conditional-deploy: skipping validations, no previous deploy history detected"
       end
 
-      if relevant_files_changed == 0
-        abort "conditional-deploy: Nothing to Update!"
-      else
-        debug "conditional-deploy: #{relevant_files_changed} files changed. Continuing deploy."
-      end
     end
   end
 end
