@@ -1,13 +1,24 @@
 namespace :conditional do
   desc "Initializes the conditional deployment functionality"
+
+  task :is_local_sync do
+    local_version = capture("git rev-parse origin/#{fetch(:branch)}")
+    remote_version = capture("git ls-remote fetch(:repo_url) | awk "/#{fetch(:branch)}}/ {print \$1}"")
+    if local_version != remote_version
+      abort "Expected local to be in sync with remote-origin"
+    end
+  end
+
   task :apply do
     on primary(:app) do
       if ENV['FORCE']
         info "Skipping conditional-deploy checks. Party on!"
         next
       end
-      revision_history = "#{current_path}/REVISION"
 
+      invoke 'conditional.is_local_sync'
+
+      revision_history = "#{current_path}/REVISION"
       if test "[[ -f #{revision_history} ]]"
         currently_deployed_version = capture("cat #{revision_history}").strip rescue nil
         git = Git.open('../')
