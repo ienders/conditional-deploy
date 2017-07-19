@@ -3,7 +3,7 @@ namespace :conditional do
 
   task :is_local_sync do
     local_version = capture("git rev-parse origin/#{fetch(:branch)}")
-    remote_version = capture("git ls-remote fetch(:repo_url) | awk "/#{fetch(:branch)}}/ {print \$1}"")
+    remote_version = capture("git ls-remote #{fetch(:repo_url)} | awk "/#{fetch(:branch)}/ {print \$1}"")
     if local_version != remote_version
       abort "Expected local to be in sync with remote-origin"
     end
