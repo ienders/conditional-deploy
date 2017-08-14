@@ -1,4 +1,13 @@
 namespace :conditional do
+  desc "Checks if remote repository is insync with local copy"
+  task :is_local_sync do
+    local_version = `git rev-parse origin/#{fetch(:branch)}`
+    remote_version = `git ls-remote #{fetch(:repo_url)} | awk \"/#{fetch(:branch)}/ {print \$1}\"`
+    if local_version != remote_version
+      abort "Expected local to be in sync with remote-origin"
+    end
+  end
+
   desc "Initializes the conditional deployment functionality"
   task :apply do
     on primary(:app) do
@@ -7,34 +16,42 @@ namespace :conditional do
         next
       end
 
-      currently_deployed_version = capture("cat #{current_path}/REVISION").strip rescue nil
-      git = Git.open('../')
-      current = git.object(currently_deployed_version)
-      deploying = git.object("origin/#{fetch(:branch)}")
-      git_difference = git.diff(current, deploying).stats
-      files_changed = git_difference[:files].keys
+      invoke 'conditional:is_local_sync'
 
-      conditional_deploy_dependencies = fetch(:deploy_dependencies, [])
-      conditional_deploy_dependencies << "#{fetch(:repo_tree)}"
+      revision_history = "#{current_path}/REVISION"
+      if test "[[ -f #{revision_history} ]]"
+        currently_deployed_version = capture("cat #{revision_history}").strip rescue nil
+        git = Git.open('../')
+        current = git.object(currently_deployed_version)
+        deploying = git.object("origin/#{fetch(:branch)}")
+        git_difference = git.diff(current, deploying).stats
+        files_changed = git_difference[:files].keys
 
-      relevant_files_changed = 0
-      debug "conditional-deploy: Checking files changed..."
-      files_changed.each do |file|
-        matched = false
-        conditional_deploy_dependencies.each do |dependency|
-          if file.include?(dependency)
-            matched = true
-            relevant_files_changed += 1
+        conditional_deploy_dependencies = fetch(:deploy_dependencies, [])
+        conditional_deploy_dependencies << "#{fetch(:repo_tree)}"
+
+        relevant_files_changed = 0
+        debug "conditional-deploy: Checking files changed..."
+        files_changed.each do |file|
+          matched = false
+          conditional_deploy_dependencies.each do |dependency|
+            if file.include?(dependency)
+              matched = true
+              relevant_files_changed += 1
+            end
           end
+          debug "  #{matched ? '✓' : '✗'} #{file}"
         end
-        debug "  #{matched ? '✓' : '✗'} #{file}"
+
+        if relevant_files_changed == 0
+          abort "conditional-deploy: Nothing to Update!"
+        else
+          debug "conditional-deploy: #{relevant_files_changed} files changed. Continuing deploy."
+        end
+      else
+        debug "conditional-deploy: skipping validations, no previous deploy history detected"
       end
 
-      if relevant_files_changed == 0
-        abort "conditional-deploy: Nothing to Update!"
-      else
-        debug "conditional-deploy: #{relevant_files_changed} files changed. Continuing deploy."
-      end
     end
   end
 end
