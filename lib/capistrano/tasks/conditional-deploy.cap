@@ -1,9 +1,9 @@
 namespace :conditional do
   desc "Checks if remote repository is insync with local copy"
   task :is_local_sync do
-    local_version = `git rev-parse origin/#{fetch(:branch)}`
+    local_version = `git rev-parse origin/#{fetch(:branch)}`.chomp!
     remote_version = `git ls-remote #{fetch(:repo_url)} | awk \"/#{fetch(:branch)}/ {print \$1}\"`
-    if local_version != remote_version
+    unless remote_version.include?(local_version)
       abort "Expected local to be in sync with remote-origin"
     end
   end
